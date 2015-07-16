@@ -1,18 +1,14 @@
 module ShellUtils
   module_function
 
-  def say(text)
-    puts text
-  end
-
-  def fail(text, code = 1)
-    STDERR.puts text
+  def error(text, code = 1)
+    STDERR.puts text.red
     exit(code)
   end
 
-  def say_status(status, text, color = :cyan)
+  def status(status, text, color = :cyan)
     status = format "% 16s", status
-    say "#{status.send(color)} #{text}"
+    puts "#{status.send(color)} #{text}"
   end
 end
 

@@ -59,7 +59,7 @@ on_white() {
 }
 
 error() {
-  red -n "$@"
+  red -n "$@" 1>&2
   exit 1
 }
 

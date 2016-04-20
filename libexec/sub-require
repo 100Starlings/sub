@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -e
+
+command=$1
+
+if ! which $command 1>/dev/null; then
+  error "This command requires the following executable to be installed: $command"
+fi

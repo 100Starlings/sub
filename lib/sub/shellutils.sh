@@ -68,3 +68,20 @@ status() {
   shift
   echo " $@"
 }
+
+ensure_in_repo() {
+  local repo=$1
+  local symlink="$HOME/.Sub/$repo"
+
+  [[ -L $symlink && -d $symlink ]] && cd "$(readlink $symlink)"
+
+  if ! git remote -v 2>/dev/null | grep -q Sub/$repo; then
+    bold $(blue "Where is your local copy of the $repo repo? ") >&2
+    read dir
+    mkdir -p ~/.Sub
+    rm -f $symlink
+    [ ${dir:0:2} = "~/" ] && dir="$HOME/${dir:2}"
+    ln -s $dir $symlink
+    cd $dir
+  fi
+}

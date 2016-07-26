@@ -1,6 +1,9 @@
 colorize() {
   color=$1; shift
-  [ "$1" = "-n" ] && newline=1 && shift
+  [ "$1" = "-n" ] && local newline=1 && shift
+  if [[ $newline == "1" && -n $line_prefix ]]; then
+    echo -en "${color}$line_prefix\033[0m"
+  fi
   echo -en "${color}$@\033[0m"
   if [ "$newline" = "1" ]; then
     echo
@@ -67,6 +70,23 @@ status() {
   cyan "$(printf "%16s" "$1")"
   shift
   echo " $@"
+}
+
+step_counter=0
+step() {
+  step_counter=$[step_counter+1]
+  func=$1
+  shift
+  if [[ -z $skip_steps || $skip_steps -lt $step_counter ]]; then
+    bold $(blue "Step $step_counter: ")
+    blue -n "$@"
+    line_prefix="  "
+    $func
+    line_prefix=
+  else
+    bold $(blue "Skipping step $step_counter: ")
+    blue -n "$@"
+  fi
 }
 
 ensure_in_repo() {

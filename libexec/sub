@@ -28,6 +28,10 @@ for lib in ${_SUB_ROOT}/lib/*; do
 done
 export RUBYLIB
 
+# Common functions and variables
+source $_SUB_ROOT/lib/sub/shellutils.sh
+source $_SUB_ROOT/secrets.sh
+
 command="$1"
 case "$command" in
 "" | "-h" | "--help" )

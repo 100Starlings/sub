@@ -77,23 +77,79 @@ status() {
 }
 export -f status
 
-export step_counter=0
+export _step_counter=0 _step_skip= _step_list= _step_countdown= _step_confirm=
+step_options_for_completion() {
+  echo --skip-steps
+  echo --list-steps
+  echo --step-countdown
+  echo --confirm-steps
+}
+step_process_args() {
+  remaining_args=()
+  while [[ $# -gt 0 ]]; do
+    local arg=$1
+    shift
+
+    case $arg in
+      -S | --skip-steps )
+        _step_skip=$1
+        shift
+        ;;
+      -L | --list-steps )
+        _step_list=1
+        ;;
+      -W | --step-countdown )
+        _step_countdown=1
+        ;;
+      -C | --confirm-steps )
+        _step_confirm=1
+        ;;
+      * )
+        remaining_args+=("$arg")
+        ;;
+    esac
+  done
+}
+step_countdown() {
+  local seconds=5
+  while [[ $seconds -gt 0 ]]; do
+    purple "\a\r  starting step in $seconds..."
+    sleep 1
+    seconds=$[seconds-1]
+  done
+  echo -ne "\r                       \r" # clear line before moving on
+}
 step() {
-  step_counter=$[step_counter+1]
+  _step_counter=$[_step_counter+1]
+
+  if [[ $1 == "-h" ]]; then
+    local harmless=1
+    shift
+  fi
+
   func=$1
   shift
-  if [[ -z $skip_steps || $skip_steps -lt $step_counter ]]; then
-    bold $(blue "Step $step_counter: ")
+
+  if [[ -z $_step_skip || $_step_skip -lt $_step_counter ]]; then
+    bold $(blue "Step $_step_counter: ")
     blue -n "$@"
-    _line_prefix="  "
-    $func
-    _line_prefix=
+    if [[ -z $_step_list ]]; then
+      if [[ -z $harmless && $_step_confirm ]]; then
+        purple -n "  Press return to continue"
+        read -s
+      elif [[ -z $harmless && $_step_countdown ]]; then
+        step_countdown
+      fi
+      _line_prefix="  "
+      $func
+      _line_prefix=
+    fi
   else
-    bold $(blue "Skipping step $step_counter: ")
+    bold $(blue "Skipping step $_step_counter: ")
     blue -n "$@"
   fi
 }
-export -f step
+export -f step_options_for_completion step_process_args step_countdown step
 
 ensure_in_repo() {
   local repo=$1

@@ -30,7 +30,7 @@ export RUBYLIB
 
 # Common functions and variables
 source $_SUB_ROOT/lib/sub/shellutils.sh
-source $_SUB_ROOT/secrets.sh
+[[ -f $_SUB_ROOT/secrets.sh ]] && source $_SUB_ROOT/secrets.sh
 
 command="$1"
 case "$command" in

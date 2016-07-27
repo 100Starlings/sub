@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Usage: sub setup
+# Summary: Guide through setting up the sub CLI
+# Help: Guide through setting up the sub CLI
+
+set -e
+
+old_secrets="$_SUB_ROOT/secrets.sh"
+new_secrets="$_SUB_ROOT/new_secrets.sh"
+
+if [[ -f $new_secrets ]]; then
+  rm -f $new_secrets
+fi
+
+while read -u 10 -r line || [[ -n $line ]]; do
+  case $line in
+    \#* )
+      echo $line >> $new_secrets
+      blue -n ${line:1}
+      ;;
+    export* )
+      variable=$(sed -Ee "s/export *([A-Z_]*)=.*/\1/" <<<"$line")
+      if [[ -n ${!variable} ]]; then
+        green -n "  $variable is already set to ${!variable}"
+        echo "export $variable=\"${!variable}\"" >> $new_secrets
+      else
+        read -p "  $(yellow $variable=)" value
+        echo "export $variable=\"$value\"" >> $new_secrets
+      fi
+      ;;
+    * )
+      echo $line >> $new_secrets
+  esac
+done 10<$_SUB_ROOT/secrets.sh.example
+
+if [[ -f $old_secrets ]]; then
+  if git diff --no-ext-diff --no-index --quiet $old_secrets $new_secrets; then
+    blue -n "secrets.sh didn't change"
+    rm -f $new_secrets
+  else
+    purple -n "secrets.sh already exists, do you want to overwrite it?"
+    while true; do
+      select yn in "Yes" "No" "Show diff"; do
+        case $yn in
+          Yes ) break;;
+          No  )
+            yellow -n "Keeping existing secrets.sh. You can find the generated file at $new_secrets"
+            exit
+            ;;
+          "Show diff" )
+            git --no-pager diff --no-ext-diff --no-index --color $old_secrets $new_secrets | cat
+            break
+            ;;
+        esac
+      done
+      [[ $yn == "Yes" ]] && break
+    done
+  fi
+fi
+
+if [[ -f $new_secrets ]]; then
+  blue -n "Copying generated file to $old_secrets"
+  mv -f $new_secrets $old_secrets
+fi

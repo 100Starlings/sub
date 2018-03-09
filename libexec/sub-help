@@ -1,22 +1,39 @@
 #!/usr/bin/env bash
 set -e
 
+libexec_path="$_SUB_ROOT/libexec"
+
 print_summaries() {
   local commands=()
   local summaries=()
   local longest_command=0
   local command
+  local parent_command=$1
 
-  for command in $(sub-commands); do
+  for command in $(sub-commands "$parent_command"); do
     local file="$(command_path "$command")"
-    if [ ! -h "$file" ]; then
-      local summary="$(summary "$file")"
-      if [ -n "$summary" ]; then
-        commands["${#commands[@]}"]="$command"
-        summaries["${#summaries[@]}"]="$summary"
+    if [ -h "$file" ]; then
+      local target=$(readlink "$file")
+      local target_command=${target#*sub-}
+      commands["${#commands[@]}"]="$command"
+      summaries["${#summaries[@]}"]="alias for \`${target_command//\// }'"
 
-        if [ "${#command}" -gt "$longest_command" ]; then
-          longest_command="${#command}"
+      if [ "${#command}" -gt "$longest_command" ]; then
+        longest_command="${#command}"
+      fi
+    else
+      if [ -d "$file" ]; then
+        commands["${#commands[@]}"]="$command"
+        summaries["${#summaries[@]}"]=""
+      else
+        local summary="$(summary "$file")"
+        if [ -n "$summary" ]; then
+          commands["${#commands[@]}"]="$command"
+          summaries["${#summaries[@]}"]="$summary"
+
+          if [ "${#command}" -gt "$longest_command" ]; then
+            longest_command="${#command}"
+          fi
         fi
       fi
     fi
@@ -27,31 +44,44 @@ print_summaries() {
   local summary_length=$(( $columns - $longest_command - 5 ))
 
   for (( index=0; index < ${#commands[@]}; index++ )); do
-    printf "   %-${longest_command}s  %s\n" "${commands[$index]}" \
+    printf "   %-${longest_command}s  %s\n" "${commands[$index]//\// }" \
       "$(truncate "$summary_length" "${summaries[$index]}")"
   done
 }
 
 print_help() {
   local file="$1"
-  local usage="$(usage "$file")"
 
-  if [ -n "$usage" ]; then
-    echo "$usage"
-
-    local help="$(help "$file")"
-    [ -n "$help" ] && echo && echo "$help"
+  if grep -i "^# provide custom help" "$file" >/dev/null; then
+    local command=${file##*sub-}
+    command=${command//\// }
+    sub ${command} --help
   else
-    echo "Sorry, this command isn't documented yet."
+    local usage="$(usage "$file")"
+
+    if [ -n "$usage" ]; then
+      echo "$usage"
+
+      local help="$(help "$file")"
+      [ -n "$help" ] && echo && echo "$help"
+    else
+      echo "Sorry, this command isn't documented yet."
+    fi
   fi
 }
 
 command_path() {
-  command -v "sub-$command" || command -v "sub-sh-$command" || true
+  local command="$1"
+  local executable="$libexec_path/sub-$command"
+  if [[ -x "$executable" ]]; then
+    echo $executable
+  else
+    command -v "sub-$command" || true
+  fi
 }
 
 summary() {
-  sed -n "s/^# Summary: \(.*\)/\1/p" "$1"
+  [[ -f "$1" ]] && sed -n "s/^# Summary: \(.*\)/\1/p" "$1"
 }
 
 usage() {
@@ -82,20 +112,37 @@ fi
 
 command="$1"
 case "$command" in
-"") echo "Usage: sub <command> [<args>]
+"")
+  echo "Usage: sub <command> [<args>]
 
 Some useful sub commands are:
 $(print_summaries)
 
 See 'sub help <command>' for information on a specific command."
-;;
-*)
-  file="$(command_path "$command")"
+  ;;
 
-  if [ -n "$file" ]; then
-    print_help "$file"
-  else
-    echo "sub: no such command \`$command'" >&2
-    exit 1
-  fi
+*)
+  while true; do
+    file="$(command_path "$command")"
+
+    if [ -f "$file" ]; then
+      print_help "$file"
+      exit 0
+    elif [ -d "$file" ]; then
+      if [ $# -gt 1 ]; then
+        shift
+        command="$command/$1"
+      else
+        echo "Subcommands of \`${command//\// }':
+$(print_summaries $command)
+
+See 'sub help ${command//\// } <subcommand>' for information on a specific subcommand."
+        exit 0
+      fi
+    else
+      echo "sub: no such command \`${command//\// }'" >&2
+      exit 1
+    fi
+  done
+  ;;
 esac

@@ -7,8 +7,29 @@ if [ -z "$COMMAND" ]; then
   exit 1
 fi
 
-COMMAND_PATH="$(command -v "sub-$COMMAND")"
-if grep -i "^# provide sub completions" "$COMMAND_PATH" >/dev/null; then
+EXECUTABLE="$_SUB_ROOT/libexec/sub-$COMMAND"
+while [[ -d "$EXECUTABLE" && -n "$2" ]]; do
   shift
-  exec "$COMMAND_PATH" --complete "$@"
+  COMMAND=$1
+  EXECUTABLE="$EXECUTABLE/$COMMAND"
+done
+
+if [ -d "$EXECUTABLE" ]; then
+  for subcommand in $EXECUTABLE/*; do
+    if [ -x "$subcommand" ]; then
+      echo $(basename "$subcommand")
+    fi
+  done
+
+else
+  if [ -x "$EXECUTABLE" ]; then
+    COMMAND_PATH="$EXECUTABLE"
+  else
+    COMMAND_PATH="$(command -v "sub-$COMMAND")"
+  fi
+
+  if grep -i "^# provide sub completions" "$COMMAND_PATH" >/dev/null; then
+    shift
+    exec "$COMMAND_PATH" --complete "$@"
+  fi
 fi

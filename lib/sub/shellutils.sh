@@ -1,3 +1,5 @@
+join() { local IFS="$1"; shift; echo "$*"; }
+
 export _line_prefix=
 colorize() {
   color=$1; shift

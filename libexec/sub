@@ -33,18 +33,35 @@ source $_SUB_ROOT/lib/sub/shellutils.sh
 [[ -f $_SUB_ROOT/secrets.sh ]] && source $_SUB_ROOT/secrets.sh
 
 command="$1"
-case "$command" in
-"" | "-h" | "--help" )
-  exec sub-help
-  ;;
-* )
-  command_path="$(command -v "sub-$command" || true)"
-  if [ ! -x "$command_path" ]; then
-    echo "sub: no such command \`$command'" >&2
-    exit 1
-  fi
+while true; do
+  case "$command" in
+  "" | "-h" | "--help" )
+    exec sub-help
+    ;;
+  * )
+    command_path="$libexec_path/sub-$command"
+    if [ -d $command_path ]; then
+      if [ $# -gt 1 ]; then
+        shift
+        command="$command/$1"
+      else
+        exec sub-help "$command"
+      fi
 
-  shift
-  exec "$command_path" "$@"
-  ;;
-esac
+    elif [ -x "$command_path" ]; then
+      shift
+      exec "$command_path" "$@"
+
+    else
+      command_path="$(command -v "sub-$command" || true)"
+      if [ -x "$command_path" ]; then
+        shift
+        exec "$command_path" "$@"
+      else
+        echo "sub: no such command \`${command//\// }'" >&2
+        exit 1
+      fi
+    fi
+    ;;
+  esac
+done

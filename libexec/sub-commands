@@ -1,41 +1,42 @@
 #!/usr/bin/env bash
-# Usage: sub commands
+# Usage: sub commands [--shallow] [PARENT_COMMAND]
 # Summary: List all sub commands
 # Help: This command is mostly used for autocompletion in various shells, and for `sub help`.
-# Also, this command helps find commands that are named the same as potentially builtin shell commands (which, cd, etc)
 
 set -e
 
-# Provide sub completions
-if [ "$1" = "--complete" ]; then
-  echo --sh
-  echo --no-sh
-  exit
-fi
-
-if [ "$1" = "--sh" ]; then
-  sh=1
-  shift
-elif [ "$1" = "--no-sh" ]; then
-  nosh=1
-  shift
-fi
-
 shopt -s nullglob
 
+join() { local IFS="$1"; shift; echo "$*"; }
+
+if [[ $1 == "--shallow" ]]; then
+  shallow=1
+  shift
+fi
+
+if [[ -n "$1" ]]; then
+  parent_command="$(join / "$@")/"
+fi
+
+list_subcommands() {
+  local path="$1"
+  for subcommand in $path/*; do
+    if [ -d "$subcommand" ]; then
+      echo ${subcommand##*sub-}
+      list_subcommands "$subcommand"
+    elif [ -x "$subcommand" ]; then
+      echo ${subcommand##*sub-}
+    fi
+  done
+}
+
 { for path in ${PATH//:/$'\n'}; do
-    for command in "${path}/sub-"*; do
+    for command in "${path}/sub-${parent_command}"*; do
+      command_path="$command"
       command="${command##${path}/sub-}"
-      if [ -n "$sh" ]; then
-        if [ ${command:0:3} = "sh-" ]; then
-          echo ${command##sh-}
-        fi
-      elif [ -n "$nosh" ]; then
-        if [ ${command:0:3} != "sh-" ]; then
-          echo ${command##sh-}
-        fi
-      else
-        echo ${command##sh-}
+      echo $command
+      if [[ -d "$command_path" && ! -h "$command_path" && -z "$shallow" ]]; then
+        list_subcommands "$command_path"
       fi
     done
   done

@@ -73,9 +73,9 @@ error() {
 export -f error
 
 status() {
-  cyan "$(printf "%16s" "$1")"
+  cyan "$(printf "%20s" "$1")" >&2
   shift
-  echo " $@"
+  echo " $@" >&2
 }
 export -f status
 

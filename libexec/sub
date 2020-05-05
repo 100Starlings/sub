@@ -23,6 +23,7 @@ libexec_path="$(abs_dirname "$0")"
 export _SUB_ROOT="$(abs_dirname "$libexec_path")"
 export PATH="${libexec_path}:$PATH"
 
+RUBYLIB="${_SUB_ROOT}/lib:$RUBYLIB"
 for lib in ${_SUB_ROOT}/lib/*; do
   RUBYLIB="$lib:$RUBYLIB"
 done

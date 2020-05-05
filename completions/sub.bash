@@ -7,8 +7,15 @@ _sub() {
   else
     local command=("${COMP_WORDS[@]:1:${COMP_CWORD}-1}")
     local completions="$(sub completions "${command[@]}")"
-    COMPREPLY=( $(compgen -W "$completions" -- "$word") )
+    local IFS=$'\n'
+    local candidates=($(compgen -W "${completions[*]}" -- "$word"))
+
+    if [ ${#candidates[*]} -eq 0 ]; then
+      return 1
+    else
+      COMPREPLY=($(printf '%q\n' "${candidates[@]}"))
+    fi
   fi
 }
 
-complete -F _sub sub
+complete -o default -F _sub sub

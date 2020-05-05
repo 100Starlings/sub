@@ -19,10 +19,15 @@ while read -u 10 -r line || [[ -n $line ]]; do
       blue -n ${line:1}
       ;;
     export* )
-      variable=$(sed -Ee "s/export *([A-Z_]*)=.*/\1/" <<<"$line")
+      var_with_value=$(sed -Ee "s/export *([A-Z_]*=.*)/\1/" <<<"$line")
+      variable=${var_with_value%%=*}
+      value=${var_with_value#*=}
       if [[ -n ${!variable} ]]; then
         green -n "  $variable is already set to ${!variable}"
         echo "export $variable=\"${!variable}\"" >> $new_secrets
+      elif [[ -n $value ]]; then
+        green -n "  Keeping default value: $value"
+        echo "export $variable=\"$value\"" >> $new_secrets
       else
         read -p "  $(yellow $variable=)" value
         echo "export $variable=\"$value\"" >> $new_secrets

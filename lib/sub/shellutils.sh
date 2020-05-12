@@ -73,8 +73,27 @@ error() {
 export -f error
 
 status() {
-  cyan "$(printf "%20s" "$1")" >&2
-  shift
+  local template="X"
+  local status=
+
+  while [[ $# -gt 0 ]]; do
+    local arg=$1
+    shift
+
+    case $arg in
+      -* )
+        template=$(${arg#-} "$template")
+        ;;
+      * )
+        if [[ -z $status ]]; then
+          status="$(printf "%20s" "$arg")"
+          status="${template/X/$status}"
+          break
+        fi
+        ;;
+    esac
+  done
+  cyan "$status" >&2
   echo " $@" >&2
 }
 export -f status

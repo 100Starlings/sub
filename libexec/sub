@@ -23,14 +23,15 @@ libexec_path="$(abs_dirname "$0")"
 export _SUB_ROOT="$(abs_dirname "$libexec_path")"
 export PATH="${libexec_path}:$PATH"
 
-RUBYLIB="${_SUB_ROOT}/lib:$RUBYLIB"
-for lib in ${_SUB_ROOT}/lib/*; do
-  RUBYLIB="$lib:$RUBYLIB"
-done
-export RUBYLIB
+# setup the correct Ruby version and Gemfile
+ruby_version=$(cat ${_SUB_ROOT}/.ruby-version)
+export RBENV_VERSION=$ruby_version
+export ASDF_RUBY_VERSION=$ruby_version
+export RUBYLIB="${_SUB_ROOT}/lib:$RUBYLIB"
+export BUNDLE_GEMFILE="${_SUB_ROOT}/Gemfile"
 
 # Common functions and variables
-source $_SUB_ROOT/lib/sub/shellutils.sh
+source $_SUB_ROOT/lib/shellutils.sh
 [[ -f $_SUB_ROOT/secrets.sh ]] && source $_SUB_ROOT/secrets.sh
 
 command="$1"

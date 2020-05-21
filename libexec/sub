@@ -28,7 +28,6 @@ ruby_version=$(cat ${_SUB_ROOT}/.ruby-version)
 export RBENV_VERSION=$ruby_version
 export ASDF_RUBY_VERSION=$ruby_version
 export RUBYLIB="${_SUB_ROOT}/lib:$RUBYLIB"
-export BUNDLE_GEMFILE="${_SUB_ROOT}/Gemfile"
 
 # Common functions and variables
 source $_SUB_ROOT/lib/shellutils.sh

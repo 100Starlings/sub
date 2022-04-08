@@ -53,7 +53,8 @@ You get a few commands that come with your sub:
 * `completions`: Helps kick off subcommand autocompletion.
 * `help`: Document how to use each subcommand.
 * `init`: Shows how to load your sub with autocompletions, based on your shell.
-* `shell`: Helps with calling subcommands that might be named the same as builtin/executables.
+* `require`: Can be used in subcommands to ensure an executable dependency exists (e.g. aws or jq).
+* `setup`: Guides the user through setting up the CLI, including customising `secrets.sh`.
 
 If you ever need to reference files inside of your sub's installation, say to access a file in the `share` directory, your sub exposes the directory path in the environment, based on your sub name. For a sub named `rush`, the variable name will be `_RUSH_ROOT`.
 
@@ -142,6 +143,35 @@ Passing the `--complete` flag to this subcommand short circuits the real command
 
 Run the `init` subcommand after you've prepared your sub to get your sub loading automatically in your shell.
 
+## Support for script generated help
+
+In some cases a command might be complex enough to require the use of an option parser library, e.g. Ruby's `OptionParser`. These libraries often provide a nice help output generated from the options and their descriptions. To help prevent duplication `sub` supports querying the command for the help output instead of reading from the top of the file.
+
+Opting into custom help requires that you add a magic comment of `# Provide custom help`, and then your script must support parsing of a flag: `--help`.
+
+## Nested commands
+
+Organise related commands using nested commands.
+
+To create nested commands you need to create a `sub-*` directory under `libexec` which will contain the subcommands. Nested commands don't have the `sub-` prefix in the filename but otherwise follow the same conventions.
+
+``` shell
+$ tree libexec
+libexec
+├── sub
+├── sub-commands
+├── ...
+├── sub-param
+│   ├── check
+│   ├── get
+│   ├── set
+│   └── unset
+└── ...
+$ sub param             # lists subcommands of `param`
+$ sub help param set    # displays help on the `set` subcommand
+$ sub param set ...     # invokes the `set` subcommand
+```
+
 ## Shortcuts
 
 Creating shortcuts for commands is easy, just symlink the shorter version you'd like to run inside of your `libexec` directory.
@@ -181,6 +211,8 @@ For zsh users:
     source ~/.zshenv
 
 You could also install your sub in a different directory, say `/usr/local`. This is just one way you could provide a way to install your sub.
+
+Finally, there is a `setup` subcommand which automates generating a `secrets.sh` file using `secrets.sh.example` as a template. You can customize the example file to list the environment variables your sub needs. You may also customize the `setup` command itself if you need something more to happen for each new user.
 
 ## License
 

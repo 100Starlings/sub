@@ -174,14 +174,15 @@ export -f step_options_for_completion step_process_args step_countdown step
 
 ensure_in_repo() {
   local repo=$1
-  local symlink="$HOME/.Sub/$repo"
+  local symlink_base="${XDG_DATA_HOME:-$HOME/.local/share}/sub"
+  local symlink="$symlink_base/$repo"
 
   [[ -L $symlink && -d $symlink ]] && cd "$(readlink $symlink)"
 
   if ! git remote -v 2>/dev/null | grep -q Sub/$repo; then
     bold $(blue "Where is your local copy of the $repo repo? ") >&2
     read dir
-    mkdir -p ~/.Sub
+    mkdir -p "$symlink_base"
     rm -f $symlink
     [ ${dir:0:2} = "~/" ] && dir="$HOME/${dir:2}"
     ln -s $dir $symlink
